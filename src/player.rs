@@ -105,11 +105,14 @@ impl Player {
     }
 
     pub fn check_spike_crash(&mut self, spike: &Spike) {
-        let mut n: usize = 0;
+        let mut n: usize;
         let mut i: usize = 0;
 
         while i < spike.vertices.len() {
-            n = if n == spike.vertices.len() { 0 } else { i + 1 };
+            n = i + 1;
+            if n == spike.vertices.len() {
+                n = 0;
+            }
 
             let vc: [f64; 2] = spike.vertices[i];
             let vn: [f64; 2] = spike.vertices[n];

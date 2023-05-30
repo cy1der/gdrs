@@ -26,9 +26,9 @@ impl Spike {
                 [
                     x as f64,
                     if flip {
-                        (y + size_y) as f64
-                    } else {
                         (y - size_y) as f64
+                    } else {
+                        (y + size_y) as f64
                     },
                 ],
             ],

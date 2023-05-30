@@ -9,8 +9,7 @@ mod vector;
 
 use crate::constants::{HEIGHT, WIDTH};
 use crate::game::Game;
-use crate::player::Player;
-use constants::{GROUND_Y_FLIP, GROUND_Y_NORMAL};
+use constants::{GROUND_Y_FLIP, GROUND_Y_NORMAL, SELECTED_LEVEL};
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::OpenGL;
 use piston::event_loop::{EventSettings, Events};
@@ -28,6 +27,9 @@ fn main() {
         .unwrap();
 
     let mut game: Game = Game::new();
+
+    game.initialize_level(SELECTED_LEVEL);
+
     let mut events: Events = Events::new(EventSettings::new());
 
     while let Some(e) = events.next(&mut window) {
@@ -73,12 +75,10 @@ fn main() {
                         }
                     }
                     Key::R => {
-                        if game.frozen || game.player.crashed || game.victory {
-                            game.attempt_count += 1;
-                            game.frozen = true;
-                            game.player = Player::new();
-                            // TODO
-                            // initialize_level();
+                        if state == ButtonState::Press
+                            && (game.frozen || game.player.crashed || game.victory)
+                        {
+                            game.initialize_level(SELECTED_LEVEL);
                         }
                     }
                     _ => {}

@@ -51,15 +51,15 @@ pub fn line_rect(line_1: &Vector, line_2: &Vector, rect_pos: &Vector, rect_size:
 
 pub fn polygon_point(vertices: [[f64; 2]; 3], point: Vector) -> bool {
     let mut collision: bool = false;
-    let mut next: usize = 0;
+    let mut next: usize;
 
     let mut current: usize = 0;
     while current < vertices.len() {
-        next = if next == vertices.len() {
-            0
-        } else {
-            current + 1
-        };
+        next = current + 1;
+
+        if next == vertices.len() {
+            next = 0
+        }
 
         let vc: [f64; 2] = vertices[current];
         let vn: [f64; 2] = vertices[next];
