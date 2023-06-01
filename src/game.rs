@@ -1,8 +1,9 @@
 use crate::block::Block;
 use crate::constants::{
-    BG_COLOR, BLOCK_COLOR, GROUND_COLOR, GROUND_Y_FLIP, GROUND_Y_NORMAL, HEIGHT, PLAYER_COLOR,
-    SPIKE_COLOR, WIDTH,
+    BG_COLOR, BLOCK_COLOR, GROUND_COLOR, GROUND_COLOR_TRANSPARENT, GROUND_Y_FLIP, GROUND_Y_NORMAL,
+    HEIGHT, ORB_COLOR, PLAYER_COLOR, SPIKE_COLOR, WIDTH,
 };
+use crate::orb::Orb;
 use crate::player::Player;
 use crate::spike::Spike;
 use crate::surface_result::SurfaceResult;
@@ -24,6 +25,7 @@ pub struct Game {
     pub player: Player,
     pub blocks: Vec<Block>,
     pub spikes: Vec<Spike>,
+    pub orbs: Vec<Orb>,
 }
 
 impl Default for Game {
@@ -38,6 +40,7 @@ impl Default for Game {
             victory: false,
             blocks: Vec::new(),
             spikes: Vec::new(),
+            orbs: Vec::new(),
         }
     }
 }
@@ -53,19 +56,13 @@ impl Game {
         use graphics::*;
 
         let player_square: [f64; 4] = rectangle::square(0.0, 0.0, self.player.size as f64);
+        let ground_rect_flip: [f64; 4] =
+            rectangle::rectangle_by_corners(0.0, 0.0, WIDTH as f64, GROUND_Y_FLIP as f64);
         let ground_rect: [f64; 4] = rectangle::rectangle_by_corners(
             0.0,
-            if self.player.gravity_flip {
-                0.0
-            } else {
-                GROUND_Y_NORMAL as f64
-            },
+            GROUND_Y_NORMAL as f64,
             WIDTH as f64,
-            if self.player.gravity_flip {
-                GROUND_Y_FLIP as f64
-            } else {
-                HEIGHT as f64
-            },
+            HEIGHT as f64,
         );
 
         self.gl
@@ -89,25 +86,54 @@ impl Game {
 
                 let ground_transform: [[f64; 3]; 2] = c.transform.trans(0.0, 0.0);
 
-                rectangle(GROUND_COLOR, ground_rect, ground_transform, gl);
+                rectangle(
+                    if self.player.gravity_flip {
+                        GROUND_COLOR_TRANSPARENT
+                    } else {
+                        GROUND_COLOR
+                    },
+                    ground_rect,
+                    ground_transform,
+                    gl,
+                );
+                rectangle(
+                    if self.player.gravity_flip {
+                        GROUND_COLOR
+                    } else {
+                        GROUND_COLOR_TRANSPARENT
+                    },
+                    ground_rect_flip,
+                    ground_transform,
+                    gl,
+                );
 
                 for block in self.blocks.iter() {
-                    if block.is_on_screen() {
-                        let block_rect: [f64; 4] = rectangle::rectangle_by_corners(
-                            block.pos.x as f64,
-                            block.pos.y as f64,
-                            (block.pos.x + block.size.x) as f64,
-                            (block.pos.y + block.size.y) as f64,
-                        );
+                    let block_rect: [f64; 4] = rectangle::rectangle_by_corners(
+                        block.pos.x as f64,
+                        block.pos.y as f64,
+                        (block.pos.x + block.size.x) as f64,
+                        (block.pos.y + block.size.y) as f64,
+                    );
 
-                        rectangle(BLOCK_COLOR, block_rect, c.transform, gl);
-                    }
+                    rectangle(BLOCK_COLOR, block_rect, c.transform, gl);
                 }
 
                 for spike in self.spikes.iter() {
-                    if spike.is_on_screen() {
-                        polygon(SPIKE_COLOR, &spike.vertices, c.transform, gl);
-                    }
+                    polygon(SPIKE_COLOR, &spike.vertices, c.transform, gl);
+                }
+
+                for orb in self.orbs.iter() {
+                    ellipse(
+                        ORB_COLOR,
+                        [
+                            orb.pos.x as f64 - (orb.d as f64 / 2.0),
+                            orb.pos.y as f64 - (orb.d as f64 / 2.0),
+                            orb.d as f64,
+                            orb.d as f64,
+                        ],
+                        c.transform,
+                        gl,
+                    );
                 }
 
                 if self.frozen {
@@ -124,7 +150,7 @@ impl Game {
                             96,
                             gl,
                             c,
-                        )
+                        );
                     } else {
                         render_text(
                             [1.0, 1.0, 1.0, 1.0],
@@ -205,7 +231,7 @@ impl Game {
                         96,
                         gl,
                         c,
-                    )
+                    );
                 } else {
                     render_text(
                         [1.0, 1.0, 1.0, 1.0],
@@ -219,7 +245,7 @@ impl Game {
                         36,
                         gl,
                         c,
-                    )
+                    );
                 }
             });
     }
@@ -261,6 +287,7 @@ impl Game {
 
             let mut no_blocks: bool = self.blocks.is_empty();
             let mut no_spikes: bool = self.spikes.is_empty();
+            let mut no_orbs: bool = self.orbs.is_empty();
 
             let mut i: usize = 0;
             while i < self.blocks.len() {
@@ -332,8 +359,38 @@ impl Game {
                 }
             }
 
-            self.victory = no_blocks && no_spikes;
-            self.frozen = no_blocks && no_spikes;
+            let mut k: usize = 0;
+            while k < self.orbs.len() {
+                let orb: &mut Orb = &mut self.orbs[k];
+                orb.pos.x -= self.player.vel.x * args.dt as f32;
+
+                if orb.pos.x < 0.0 && !orb.is_on_screen() {
+                    self.orbs.remove(k);
+
+                    if self.orbs.is_empty() {
+                        no_orbs = true;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+
+                if self.player.check_orb_collide(orb) && self.player.jumping && !orb.activated {
+                    orb.activated = true;
+                    self.player.jump = Vector::new(self.player.pos.x + 250.0, self.player.pos.y);
+                    self.player.grounded = false;
+                    self.player.vel.y = if self.player.gravity_flip {
+                        self.player.acc.y.powi(2)
+                    } else {
+                        -self.player.acc.y.powi(2)
+                    };
+                }
+
+                k += 1;
+            }
+
+            self.victory = no_blocks && no_spikes && no_orbs;
+            self.frozen = no_blocks && no_spikes && no_orbs;
 
             if self.player.grounded && self.player.jumping {
                 self.player.jump = Vector::new(self.player.pos.x + 250.0, self.player.pos.y);
@@ -351,6 +408,7 @@ impl Game {
         self.player = Player::new();
         self.blocks.clear();
         self.spikes.clear();
+        self.orbs.clear();
         self.attempt_count += 1;
         self.frozen = true;
         self.victory = false;
@@ -367,26 +425,41 @@ impl Game {
         }
 
         for line in &lines {
-            let fields_raw: Vec<&str> = line.split('.').collect();
-            let fields_nums: Vec<f32> = fields_raw[..=4]
-                .iter()
-                .map(|x| x.parse::<f32>().unwrap())
-                .collect();
+            let fields_raw: Vec<&str> = line.split(',').collect();
+            let entry_type: f32 = fields_raw[0].parse::<f32>().unwrap();
 
-            match fields_nums[0] {
-                x if x == 1.0 => self.blocks.push(Block::new(
-                    fields_nums[1],
-                    fields_nums[2],
-                    fields_nums[3],
-                    fields_nums[4],
-                )),
-                x if x == 2.0 => self.spikes.push(Spike::new(
-                    fields_nums[1],
-                    fields_nums[2],
-                    fields_nums[3],
-                    fields_nums[4],
-                    fields_raw[5].parse::<bool>().unwrap(),
-                )),
+            match entry_type {
+                x if x == 1.0 => {
+                    let fields_nums: Vec<f32> = fields_raw[..=fields_raw.len() - 1]
+                        .iter()
+                        .map(|x| x.parse::<f32>().unwrap())
+                        .collect();
+                    self.blocks.push(Block::new(
+                        Vector::new(fields_nums[1], fields_nums[2]),
+                        Vector::new(fields_nums[3], fields_nums[4]),
+                    ));
+                }
+                x if x == 2.0 => {
+                    let fields_nums: Vec<f32> = fields_raw[..=fields_raw.len() - 2]
+                        .iter()
+                        .map(|x| x.parse::<f32>().unwrap())
+                        .collect();
+                    self.spikes.push(Spike::new(
+                        Vector::new(fields_nums[1], fields_nums[2]),
+                        Vector::new(fields_nums[3], fields_nums[4]),
+                        fields_raw[5].parse::<bool>().unwrap(),
+                    ))
+                }
+                x if x == 3.0 => {
+                    let fields_nums: Vec<f32> = fields_raw[..=fields_raw.len() - 1]
+                        .iter()
+                        .map(|x| x.parse::<f32>().unwrap())
+                        .collect();
+                    self.orbs.push(Orb::new(
+                        Vector::new(fields_nums[1], fields_nums[2]),
+                        fields_nums[3],
+                    ));
+                }
                 _ => {}
             }
         }

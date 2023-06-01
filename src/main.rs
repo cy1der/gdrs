@@ -1,6 +1,7 @@
 mod block;
 mod constants;
 mod game;
+mod orb;
 mod player;
 mod spike;
 mod surface_result;
@@ -10,7 +11,7 @@ mod vector;
 use crate::constants::{HEIGHT, WIDTH};
 use crate::game::Game;
 use constants::{GROUND_Y_FLIP, GROUND_Y_NORMAL, SELECTED_LEVEL};
-use glutin_window::GlutinWindow as Window;
+use glutin_window::GlutinWindow;
 use opengl_graphics::OpenGL;
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderEvent, UpdateEvent};
@@ -19,7 +20,7 @@ use piston::{Button, ButtonEvent, ButtonState, Key, MouseButton, WindowSettings}
 fn main() {
     let opengl: OpenGL = OpenGL::V4_5;
 
-    let mut window: Window = WindowSettings::new("Geometry Dash", [WIDTH, HEIGHT])
+    let mut window: GlutinWindow = WindowSettings::new("Geometry Dash", [WIDTH, HEIGHT])
         .graphics_api(opengl)
         .resizable(false)
         .exit_on_esc(false)

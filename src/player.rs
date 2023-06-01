@@ -1,5 +1,6 @@
 use crate::block::Block;
 use crate::constants::{GRAVITY, GROUND_Y_FLIP, GROUND_Y_NORMAL, PLAYER_SIZE, PLAYER_SPEED, WIDTH};
+use crate::orb::Orb;
 use crate::spike::Spike;
 use crate::surface_result::SurfaceResult;
 use crate::util::*;
@@ -142,5 +143,28 @@ impl Player {
                 i += 1;
             }
         }
+    }
+
+    pub fn check_orb_collide(&self, orb: &Orb) -> bool {
+        let mut tx: f32 = orb.pos.x;
+        let mut ty: f32 = orb.pos.y;
+
+        if orb.pos.x < self.pos.x - (self.size as f32 / 2.0) {
+            tx = self.pos.x - (self.size as f32 / 2.0);
+        } else if orb.pos.x > self.pos.x + (self.size as f32 / 2.0) {
+            tx = self.pos.x + (self.size as f32 / 2.0);
+        }
+
+        if orb.pos.y < self.pos.y - (self.size as f32 / 2.0) {
+            ty = self.pos.y - (self.size as f32 / 2.0);
+        } else if orb.pos.y > self.pos.y + (self.size as f32 / 2.0) {
+            ty = self.pos.y + (self.size as f32 / 2.0);
+        }
+
+        let dx: f32 = orb.pos.x - tx;
+        let dy: f32 = orb.pos.y - ty;
+        let d: f32 = (dx.powi(2) + dy.powi(2)).sqrt();
+
+        d <= orb.d / 2.0
     }
 }

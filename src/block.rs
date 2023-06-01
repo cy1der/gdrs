@@ -11,10 +11,10 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(x: f32, y: f32, size_x: f32, size_y: f32) -> Self {
+    pub fn new(pos: Vector, size: Vector) -> Self {
         Block {
-            pos: Vector::new(x, y),
-            size: Vector::new(size_x, size_y),
+            pos,
+            size,
             on_screen: false,
         }
     }
