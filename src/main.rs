@@ -10,20 +10,21 @@ mod vector;
 
 use crate::constants::{HEIGHT, WIDTH};
 use crate::game::Game;
-use constants::{GROUND_Y_FLIP, GROUND_Y_NORMAL, SELECTED_LEVEL};
-use glutin_window::GlutinWindow;
+use constants::{FPS, GROUND_Y_FLIP, GROUND_Y_NORMAL, SELECTED_LEVEL};
+use glutin_window::GlutinWindow as Window;
 use opengl_graphics::OpenGL;
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderEvent, UpdateEvent};
-use piston::{Button, ButtonEvent, ButtonState, Key, MouseButton, WindowSettings};
-
+use piston::{Button, ButtonEvent, ButtonState, EventLoop, Key, MouseButton, WindowSettings};
 fn main() {
     let opengl: OpenGL = OpenGL::V4_5;
 
-    let mut window: GlutinWindow = WindowSettings::new("Geometry Dash", [WIDTH, HEIGHT])
+    let mut window: Window = WindowSettings::new("Geometry Dash", [WIDTH, HEIGHT])
         .graphics_api(opengl)
         .resizable(false)
         .exit_on_esc(false)
+        .vsync(true)
+        .samples(4)
         .build()
         .unwrap();
 
@@ -31,7 +32,7 @@ fn main() {
 
     game.initialize_level(SELECTED_LEVEL);
 
-    let mut events: Events = Events::new(EventSettings::new());
+    let mut events: Events = Events::new(EventSettings::new()).max_fps(FPS);
 
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {

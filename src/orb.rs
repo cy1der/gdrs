@@ -1,7 +1,4 @@
-use crate::{
-    constants::{HEIGHT, WIDTH},
-    vector::Vector,
-};
+use crate::vector::Vector;
 
 pub struct Orb {
     pub pos: Vector,
@@ -16,12 +13,5 @@ impl Orb {
             d,
             activated: false,
         }
-    }
-
-    pub fn is_on_screen(&self) -> bool {
-        self.pos.x + (self.d / 2.0) <= WIDTH as f32
-            && self.pos.x - (self.d / 2.0) >= 0.0
-            && self.pos.y + (self.d / 2.0) <= HEIGHT as f32
-            && self.pos.y - (self.d / 2.0) >= 0.0
     }
 }

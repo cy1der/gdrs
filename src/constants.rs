@@ -17,4 +17,6 @@ pub const PLAYER_SPEED: f32 = 10.386 * 60.0;
 
 pub const GRAVITY: f32 = 0.575 * 60.0;
 
+pub const FPS: u64 = 60;
+
 pub const SELECTED_LEVEL: &str = "level_1"; // Change this based on file names in levels/

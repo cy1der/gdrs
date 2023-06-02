@@ -232,6 +232,55 @@ impl Game {
                         gl,
                         c,
                     );
+
+                    line(
+                        [1.0, 0.0, 0.0, 1.0],
+                        1.5,
+                        [
+                            self.player.pos.x as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.x as f64 + (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 - (self.player.size as f64 / 2.0),
+                        ],
+                        c.transform,
+                        gl,
+                    );
+                    line(
+                        [1.0, 0.0, 0.0, 1.0],
+                        1.5,
+                        [
+                            self.player.pos.x as f64 + (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.x as f64 + (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 + (self.player.size as f64 / 2.0),
+                        ],
+                        c.transform,
+                        gl,
+                    );
+                    line(
+                        [1.0, 0.0, 0.0, 1.0],
+                        1.5,
+                        [
+                            self.player.pos.x as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 + (self.player.size as f64 / 2.0),
+                            self.player.pos.x as f64 + (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 + (self.player.size as f64 / 2.0),
+                        ],
+                        c.transform,
+                        gl,
+                    );
+                    line(
+                        [1.0, 0.0, 0.0, 1.0],
+                        1.5,
+                        [
+                            self.player.pos.x as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.x as f64 - (self.player.size as f64 / 2.0),
+                            self.player.pos.y as f64 + (self.player.size as f64 / 2.0),
+                        ],
+                        c.transform,
+                        gl,
+                    );
                 } else {
                     render_text(
                         [1.0, 1.0, 1.0, 1.0],
@@ -289,23 +338,76 @@ impl Game {
             let mut no_spikes: bool = self.spikes.is_empty();
             let mut no_orbs: bool = self.orbs.is_empty();
 
+            let mut k: usize = 0;
+            while k < self.orbs.len() {
+                let orb: &mut Orb = &mut self.orbs[k];
+                orb.pos.x -= self.player.vel.x * args.dt as f32;
+
+                if orb.pos.x + (orb.d / 2.0) < 0.0 {
+                    self.orbs.remove(k);
+
+                    if self.orbs.is_empty() {
+                        no_orbs = true;
+                        break;
+                    } else {
+                        continue;
+                    }
+                } else if self.player.check_orb_collide(orb)
+                    && self.player.jumping
+                    && !orb.activated
+                {
+                    orb.activated = true;
+                    self.player.jump = Vector::new(self.player.pos.x + 250.0, self.player.pos.y);
+                    self.player.grounded = false;
+                    self.player.vel.y = if self.player.gravity_flip {
+                        self.player.acc.y.powi(2)
+                    } else {
+                        -self.player.acc.y.powi(2)
+                    };
+                }
+
+                k += 1;
+            }
+
+            let mut j: usize = 0;
+            while j < self.spikes.len() {
+                let spike: &mut Spike = &mut self.spikes[j];
+                spike.pos.x -= self.player.vel.x * args.dt as f32;
+                spike.vertices[0][0] = (spike.pos.x - (spike.size.x / 2.0)) as f64;
+                spike.vertices[1][0] = (spike.pos.x + (spike.size.x / 2.0)) as f64;
+                spike.vertices[2][0] = spike.pos.x as f64;
+
+                if spike.pos.x + (spike.size.x / 2.0) < 0.0 {
+                    self.spikes.remove(j);
+
+                    if self.spikes.is_empty() {
+                        no_spikes = true;
+                        break;
+                    }
+                } else {
+                    self.player.check_spike_crash(spike);
+                }
+
+                if self.player.crashed {
+                    return;
+                } else {
+                    j += 1;
+                }
+            }
+
             let mut i: usize = 0;
             while i < self.blocks.len() {
                 let block: &mut Block = &mut self.blocks[i];
                 block.pos.x -= self.player.vel.x * args.dt as f32;
 
-                if block.pos.x < 0.0 && !block.is_on_screen() {
+                if block.pos.x + block.size.x < 0.0 {
                     self.blocks.remove(i);
 
                     if self.blocks.is_empty() {
                         no_blocks = true;
                         break;
-                    } else {
-                        continue;
                     }
-                }
-
-                if block.is_on_screen() {
+                } else {
                     let surface_check: SurfaceResult = self.player.on_block(block);
 
                     match surface_check {
@@ -323,74 +425,11 @@ impl Game {
                 }
 
                 if self.player.crashed {
-                    break;
+                    return;
                 } else {
                     i += 1;
                 }
             }
-
-            let mut j: usize = 0;
-            while j < self.spikes.len() {
-                let spike: &mut Spike = &mut self.spikes[j];
-                spike.pos.x -= self.player.vel.x * args.dt as f32;
-                spike.vertices[0][0] = (spike.pos.x - (spike.size.x / 2.0)) as f64;
-                spike.vertices[1][0] = (spike.pos.x + (spike.size.x / 2.0)) as f64;
-                spike.vertices[2][0] = spike.pos.x as f64;
-
-                if spike.pos.x < 0.0 && !spike.is_on_screen() {
-                    self.spikes.remove(j);
-
-                    if self.spikes.is_empty() {
-                        no_spikes = true;
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-
-                if spike.is_on_screen() {
-                    self.player.check_spike_crash(spike);
-                }
-
-                if self.player.crashed {
-                    break;
-                } else {
-                    j += 1;
-                }
-            }
-
-            let mut k: usize = 0;
-            while k < self.orbs.len() {
-                let orb: &mut Orb = &mut self.orbs[k];
-                orb.pos.x -= self.player.vel.x * args.dt as f32;
-
-                if orb.pos.x < 0.0 && !orb.is_on_screen() {
-                    self.orbs.remove(k);
-
-                    if self.orbs.is_empty() {
-                        no_orbs = true;
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-
-                if self.player.check_orb_collide(orb) && self.player.jumping && !orb.activated {
-                    orb.activated = true;
-                    self.player.jump = Vector::new(self.player.pos.x + 250.0, self.player.pos.y);
-                    self.player.grounded = false;
-                    self.player.vel.y = if self.player.gravity_flip {
-                        self.player.acc.y.powi(2)
-                    } else {
-                        -self.player.acc.y.powi(2)
-                    };
-                }
-
-                k += 1;
-            }
-
-            self.victory = no_blocks && no_spikes && no_orbs;
-            self.frozen = no_blocks && no_spikes && no_orbs;
 
             if self.player.grounded && self.player.jumping {
                 self.player.jump = Vector::new(self.player.pos.x + 250.0, self.player.pos.y);
@@ -400,7 +439,12 @@ impl Game {
                 } else {
                     -self.player.acc.y.powi(2)
                 };
+            } else {
+                self.player.grounded = false;
             }
+
+            self.victory = no_blocks && no_spikes && no_orbs;
+            self.frozen = no_blocks && no_spikes && no_orbs;
         }
     }
 

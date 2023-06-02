@@ -137,11 +137,7 @@ impl Player {
 
             self.crashed = collision || inside;
 
-            if self.crashed {
-                break;
-            } else {
-                i += 1;
-            }
+            i += 1;
         }
     }
 
