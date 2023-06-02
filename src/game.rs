@@ -52,7 +52,7 @@ impl Game {
         }
     }
 
-    pub fn render(&mut self, args: &RenderArgs) {
+    pub fn render(&mut self, args: &RenderArgs, fps: i32) {
         use graphics::*;
 
         let player_square: [f64; 4] = rectangle::square(0.0, 0.0, self.player.size as f64);
@@ -138,19 +138,7 @@ impl Game {
 
                 if self.frozen {
                     if self.victory {
-                        render_text(
-                            [0.0, 1.0, 0.0, 1.0],
-                            "Victory ",
-                            64,
-                            if self.player.gravity_flip {
-                                HEIGHT as i32 - 64
-                            } else {
-                                128
-                            },
-                            96,
-                            gl,
-                            c,
-                        );
+                        render_text([0.0, 1.0, 0.0, 1.0], "Victory ", 64, 128, 96, gl, c);
                     } else {
                         render_text(
                             [1.0, 1.0, 1.0, 1.0],
@@ -219,19 +207,7 @@ impl Game {
                         );
                     }
                 } else if self.player.crashed {
-                    render_text(
-                        [1.0, 0.0, 0.0, 1.0],
-                        "Failure ",
-                        64,
-                        if self.player.gravity_flip {
-                            HEIGHT as i32 - 64
-                        } else {
-                            128
-                        },
-                        96,
-                        gl,
-                        c,
-                    );
+                    render_text([1.0, 0.0, 0.0, 1.0], "Failure ", 64, 128, 96, gl, c);
 
                     line(
                         [1.0, 0.0, 0.0, 1.0],
@@ -286,16 +262,22 @@ impl Game {
                         [1.0, 1.0, 1.0, 1.0],
                         format!("Attempt {} ", self.attempt_count).as_str(),
                         36,
-                        if self.player.gravity_flip {
-                            HEIGHT as i32 - 36
-                        } else {
-                            72
-                        },
+                        72,
                         36,
                         gl,
                         c,
                     );
                 }
+
+                render_text(
+                    [1.0, 1.0, 1.0, 1.0],
+                    format!("FPS: {} ", fps).as_str(),
+                    36,
+                    HEIGHT as i32 - 36,
+                    36,
+                    gl,
+                    c,
+                );
             });
     }
 

@@ -16,6 +16,8 @@ use opengl_graphics::OpenGL;
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderEvent, UpdateEvent};
 use piston::{Button, ButtonEvent, ButtonState, EventLoop, Key, MouseButton, WindowSettings};
+use std::time::{Duration, Instant};
+
 fn main() {
     let opengl: OpenGL = OpenGL::V4_5;
 
@@ -29,6 +31,9 @@ fn main() {
         .unwrap();
 
     let mut game: Game = Game::new();
+    let mut fps: i32 = 0;
+    let mut fps_counter: i32 = 0;
+    let mut last_update: Instant = Instant::now();
 
     game.initialize_level(SELECTED_LEVEL);
 
@@ -36,7 +41,17 @@ fn main() {
 
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            game.render(&args);
+            let now: Instant = Instant::now();
+            let elapsed: Duration = now - last_update;
+            fps_counter += 1;
+
+            if elapsed.as_secs_f32() >= 1.0 {
+                fps = fps_counter;
+                fps_counter = 0;
+                last_update = now;
+            }
+
+            game.render(&args, fps);
         }
 
         if let Some(args) = e.update_args() {
